@@ -1,0 +1,147 @@
+<Page x:Class="LiquidGlassLab.Presentation.MainPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:local="using:LiquidGlassLab.Presentation"
+      xmlns:controls="using:LiquidGlassLab.Controls"
+      NavigationCacheMode="Required">
+
+  <Grid>
+
+    <!-- ====== Background testbed art (intentionally literal colors) ====== -->
+    <Grid x:Name="Backdrop">
+      <Grid.Background>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+          <GradientStop Color="#0F1023" Offset="0" />
+          <GradientStop Color="#1B1464" Offset="0.45" />
+          <GradientStop Color="#3A0CA3" Offset="0.8" />
+          <GradientStop Color="#10002B" Offset="1" />
+        </LinearGradientBrush>
+      </Grid.Background>
+
+      <Ellipse Width="520" Height="520" Margin="-140,-160,0,0"
+               HorizontalAlignment="Left" VerticalAlignment="Top">
+        <Ellipse.Fill>
+          <RadialGradientBrush>
+            <GradientStop Color="#FF6D00" Offset="0" />
+            <GradientStop Color="#00FF6D00" Offset="1" />
+          </RadialGradientBrush>
+        </Ellipse.Fill>
+      </Ellipse>
+
+      <Ellipse Width="640" Height="640" Margin="0,0,-200,-260"
+               HorizontalAlignment="Right" VerticalAlignment="Bottom">
+        <Ellipse.Fill>
+          <RadialGradientBrush>
+            <GradientStop Color="#00E5FF" Offset="0" />
+            <GradientStop Color="#0000E5FF" Offset="1" />
+          </RadialGradientBrush>
+        </Ellipse.Fill>
+      </Ellipse>
+
+      <Ellipse Width="380" Height="380" Margin="0,140,60,0"
+               HorizontalAlignment="Right" VerticalAlignment="Top">
+        <Ellipse.Fill>
+          <RadialGradientBrush>
+            <GradientStop Color="#F72585" Offset="0" />
+            <GradientStop Color="#00F72585" Offset="1" />
+          </RadialGradientBrush>
+        </Ellipse.Fill>
+      </Ellipse>
+
+      <!-- High-contrast detail for the lens to chew on -->
+      <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="6">
+        <TextBlock Text="UNO PLATFORM" FontSize="84" FontWeight="Black"
+                   Foreground="#FFFFFF" CharacterSpacing="160" HorizontalAlignment="Center" />
+        <TextBlock Text="LIQUID GLASS ON SKIA" FontSize="34" FontWeight="SemiBold"
+                   Foreground="#FFD60A" CharacterSpacing="420" HorizontalAlignment="Center" />
+        <TextBlock Text="refraction · blur · saturation · rim light — one SkSL backdrop"
+                   FontSize="18" Foreground="#B8FFFFFF" HorizontalAlignment="Center" />
+
+        <ItemsControl Margin="0,28,0,0" HorizontalAlignment="Center">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Orientation="Horizontal" Spacing="14" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <Rectangle Width="64" Height="64" RadiusX="14" RadiusY="14" Fill="#FF6D00" />
+          <Rectangle Width="64" Height="64" RadiusX="14" RadiusY="14" Fill="#FFD60A" />
+          <Rectangle Width="64" Height="64" RadiusX="14" RadiusY="14" Fill="#06D6A0" />
+          <Rectangle Width="64" Height="64" RadiusX="14" RadiusY="14" Fill="#00E5FF" />
+          <Rectangle Width="64" Height="64" RadiusX="14" RadiusY="14" Fill="#F72585" />
+          <Rectangle Width="64" Height="64" RadiusX="14" RadiusY="14" Fill="#FFFFFF" />
+        </ItemsControl>
+      </StackPanel>
+    </Grid>
+
+    <!-- ====== Draggable Liquid Glass card ====== -->
+    <Grid x:Name="GlassCard"
+          Width="420" Height="240"
+          HorizontalAlignment="Center" VerticalAlignment="Center"
+          Margin="0,0,0,120"
+          Background="Transparent"
+          ManipulationMode="TranslateX,TranslateY"
+          ManipulationDelta="OnGlassDrag">
+      <Grid.RenderTransform>
+        <TranslateTransform x:Name="GlassTransform" />
+      </Grid.RenderTransform>
+
+      <controls:LiquidGlassView x:Name="Glass"
+                                GlassCornerRadius="40"
+                                RefractionStrength="40"
+                                BezelWidth="30"
+                                BlurRadius="6"
+                                TintOpacity="0.08"
+                                SaturationBoost="1.35" />
+
+      <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="6"
+                  IsHitTestVisible="False">
+        <TextBlock Text="Liquid Glass" FontSize="34" FontWeight="SemiBold"
+                   Foreground="#F2FFFFFF" HorizontalAlignment="Center" />
+        <TextBlock Text="drag me around" FontSize="15"
+                   Foreground="#A0FFFFFF" HorizontalAlignment="Center" />
+      </StackPanel>
+    </Grid>
+
+    <!-- ====== Glass control panel ====== -->
+    <Grid Height="190" VerticalAlignment="Bottom" Margin="24,0,24,20" Background="Transparent">
+      <controls:LiquidGlassView GlassCornerRadius="28"
+                                RefractionStrength="22"
+                                BezelWidth="18"
+                                BlurRadius="14"
+                                TintOpacity="0.16"
+                                SaturationBoost="1.2" />
+
+      <Grid Margin="28,18" ColumnSpacing="32">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition />
+          <ColumnDefinition />
+        </Grid.ColumnDefinitions>
+        <Grid.Resources>
+          <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#E6FFFFFF" />
+            <Setter Property="FontSize" Value="13" />
+          </Style>
+        </Grid.Resources>
+
+        <StackPanel Grid.Column="0" Spacing="2">
+          <TextBlock Text="Refraction" />
+          <Slider Minimum="0" Maximum="120" StepFrequency="1"
+                  Value="{x:Bind Glass.RefractionStrength, Mode=TwoWay}" />
+          <TextBlock Text="Bezel width" />
+          <Slider Minimum="2" Maximum="90" StepFrequency="1"
+                  Value="{x:Bind Glass.BezelWidth, Mode=TwoWay}" />
+        </StackPanel>
+
+        <StackPanel Grid.Column="1" Spacing="2">
+          <TextBlock Text="Blur" />
+          <Slider Minimum="0" Maximum="30" StepFrequency="0.5"
+                  Value="{x:Bind Glass.BlurRadius, Mode=TwoWay}" />
+          <TextBlock Text="Tint opacity" />
+          <Slider Minimum="0" Maximum="0.5" StepFrequency="0.01"
+                  Value="{x:Bind Glass.TintOpacity, Mode=TwoWay}" />
+        </StackPanel>
+      </Grid>
+    </Grid>
+
+  </Grid>
+</Page>
