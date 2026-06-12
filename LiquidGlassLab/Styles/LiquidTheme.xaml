@@ -1,0 +1,225 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="using:LiquidGlassLab.Controls">
+
+  <!-- ============================================================
+       Liquid theme for Uno Platform (Skia targets)
+       Glass surfaces and controls built on LiquidGlassView.
+       ============================================================ -->
+
+  <Color x:Key="LiquidAccentColor">#00E5FF</Color>
+  <Color x:Key="LiquidTextColor">#F0FFFFFF</Color>
+  <Color x:Key="LiquidTextDimColor">#A0FFFFFF</Color>
+  <SolidColorBrush x:Key="LiquidAccentBrush" Color="{StaticResource LiquidAccentColor}" />
+  <SolidColorBrush x:Key="LiquidTextBrush" Color="{StaticResource LiquidTextColor}" />
+  <SolidColorBrush x:Key="LiquidTextDimBrush" Color="{StaticResource LiquidTextDimColor}" />
+
+  <!-- ====== Glass content host ====== -->
+  <Style TargetType="controls:LiquidGlassPanel">
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Stretch" />
+    <Setter Property="IsTabStop" Value="False" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="controls:LiquidGlassPanel">
+          <Grid>
+            <controls:LiquidGlassView IsHitTestVisible="False"
+                                      GlassCornerRadius="{TemplateBinding GlassCornerRadius}"
+                                      RefractionStrength="{TemplateBinding RefractionStrength}"
+                                      BezelWidth="{TemplateBinding BezelWidth}"
+                                      BlurRadius="{TemplateBinding BlurRadius}"
+                                      ChromaticAberration="{TemplateBinding ChromaticAberration}"
+                                      TintColor="{TemplateBinding TintColor}"
+                                      TintOpacity="{TemplateBinding TintOpacity}"
+                                      SaturationBoost="{TemplateBinding SaturationBoost}" />
+            <ContentPresenter Padding="{TemplateBinding Padding}"
+                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+          </Grid>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!-- ====== Glass Button ====== -->
+  <Style x:Key="LiquidButtonStyle" TargetType="Button">
+    <Setter Property="Foreground" Value="{StaticResource LiquidTextBrush}" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="22,0" />
+    <Setter Property="MinHeight" Value="44" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="UseSystemFocusVisuals" Value="True" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Grid x:Name="Root" Background="Transparent">
+            <VisualStateManager.VisualStateGroups>
+              <VisualStateGroup x:Name="CommonStates">
+                <VisualState x:Name="Normal" />
+                <VisualState x:Name="PointerOver">
+                  <VisualState.Setters>
+                    <Setter Target="StateOverlay.Opacity" Value="0.09" />
+                  </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="Pressed">
+                  <VisualState.Setters>
+                    <Setter Target="StateOverlay.Opacity" Value="0.18" />
+                  </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="Disabled">
+                  <VisualState.Setters>
+                    <Setter Target="Root.Opacity" Value="0.45" />
+                  </VisualState.Setters>
+                </VisualState>
+              </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+            <controls:LiquidGlassView IsHitTestVisible="False"
+                                      GlassCornerRadius="22"
+                                      RefractionStrength="16"
+                                      BezelWidth="12"
+                                      BlurRadius="8"
+                                      TintOpacity="0.10" />
+            <Border x:Name="StateOverlay"
+                    Background="White"
+                    CornerRadius="22"
+                    Opacity="0"
+                    IsHitTestVisible="False" />
+            <ContentPresenter Padding="{TemplateBinding Padding}"
+                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+          </Grid>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!-- ====== Glass ToggleButton ====== -->
+  <Style x:Key="LiquidToggleButtonStyle" TargetType="ToggleButton">
+    <Setter Property="Foreground" Value="{StaticResource LiquidTextBrush}" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="22,0" />
+    <Setter Property="MinHeight" Value="44" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="UseSystemFocusVisuals" Value="True" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ToggleButton">
+          <Grid x:Name="Root" Background="Transparent">
+            <VisualStateManager.VisualStateGroups>
+              <VisualStateGroup x:Name="CommonStates">
+                <VisualState x:Name="Normal" />
+                <VisualState x:Name="PointerOver">
+                  <VisualState.Setters>
+                    <Setter Target="StateOverlay.Opacity" Value="0.09" />
+                  </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="Pressed">
+                  <VisualState.Setters>
+                    <Setter Target="StateOverlay.Opacity" Value="0.18" />
+                  </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="Disabled">
+                  <VisualState.Setters>
+                    <Setter Target="Root.Opacity" Value="0.45" />
+                  </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="Checked">
+                  <VisualState.Setters>
+                    <Setter Target="CheckedOverlay.Opacity" Value="0.30" />
+                  </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="CheckedPointerOver">
+                  <VisualState.Setters>
+                    <Setter Target="CheckedOverlay.Opacity" Value="0.30" />
+                    <Setter Target="StateOverlay.Opacity" Value="0.09" />
+                  </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="CheckedPressed">
+                  <VisualState.Setters>
+                    <Setter Target="CheckedOverlay.Opacity" Value="0.30" />
+                    <Setter Target="StateOverlay.Opacity" Value="0.18" />
+                  </VisualState.Setters>
+                </VisualState>
+              </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+            <controls:LiquidGlassView IsHitTestVisible="False"
+                                      GlassCornerRadius="22"
+                                      RefractionStrength="16"
+                                      BezelWidth="12"
+                                      BlurRadius="8"
+                                      TintOpacity="0.10" />
+            <Border x:Name="CheckedOverlay"
+                    Background="{StaticResource LiquidAccentBrush}"
+                    CornerRadius="22"
+                    Opacity="0"
+                    IsHitTestVisible="False" />
+            <Border x:Name="StateOverlay"
+                    Background="White"
+                    CornerRadius="22"
+                    Opacity="0"
+                    IsHitTestVisible="False" />
+            <ContentPresenter Padding="{TemplateBinding Padding}"
+                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+          </Grid>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!-- ====== Glass TextBox ====== -->
+  <Style x:Key="LiquidTextBoxStyle" TargetType="TextBox">
+    <Setter Property="Foreground" Value="{StaticResource LiquidTextBrush}" />
+    <Setter Property="PlaceholderForeground" Value="{StaticResource LiquidTextDimBrush}" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="18,12" />
+    <Setter Property="MinHeight" Value="46" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="TextBox">
+          <Grid>
+            <controls:LiquidGlassView IsHitTestVisible="False"
+                                      GlassCornerRadius="18"
+                                      RefractionStrength="12"
+                                      BezelWidth="10"
+                                      BlurRadius="10"
+                                      TintOpacity="0.12" />
+            <ScrollViewer x:Name="ContentElement"
+                          Margin="{TemplateBinding Padding}"
+                          HorizontalScrollMode="Auto"
+                          HorizontalScrollBarVisibility="Hidden"
+                          VerticalScrollMode="Auto"
+                          VerticalScrollBarVisibility="Hidden"
+                          IsTabStop="False"
+                          ZoomMode="Disabled"
+                          AutomationProperties.AccessibilityView="Raw"
+                          VerticalAlignment="Center" />
+            <TextBlock x:Name="PlaceholderTextContentPresenter"
+                       Text="{TemplateBinding PlaceholderText}"
+                       Foreground="{TemplateBinding PlaceholderForeground}"
+                       Margin="{TemplateBinding Padding}"
+                       VerticalAlignment="Center"
+                       IsHitTestVisible="False" />
+          </Grid>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!-- ====== Glass flyout presenter (transparent shell; put a LiquidGlassPanel inside) ====== -->
+  <Style x:Key="LiquidFlyoutPresenterStyle" TargetType="FlyoutPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="MinHeight" Value="0" />
+  </Style>
+
+</ResourceDictionary>

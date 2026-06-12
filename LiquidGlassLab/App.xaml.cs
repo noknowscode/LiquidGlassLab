@@ -80,11 +80,18 @@ public partial class App : Application
                 .UseNavigation(ReactiveViewModelMappings.ViewModelMappings, RegisterRoutes)
             );
         MainWindow = builder.Window;
+        MainWindow.SetWindowIcon();
 
-        #if DEBUG
-        MainWindow.UseStudio();
-#endif
-                MainWindow.SetWindowIcon();
+        // Diagnostic instrumentation: trace every shutdown path to a file.
+        var trace = (string m) =>
+            File.AppendAllText(
+                Path.Combine(AppContext.BaseDirectory, "liquid-exit.log"),
+                $"{DateTime.Now:HH:mm:ss.fff} {m}{Environment.NewLine}");
+        MainWindow.Closed += (_, e) => trace($"Window.Closed raised{Environment.NewLine}{Environment.StackTrace}");
+        AppDomain.CurrentDomain.UnhandledException += (_, e) => trace($"UnhandledException: {e.ExceptionObject}");
+        AppDomain.CurrentDomain.ProcessExit += (_, _) => trace("ProcessExit");
+        TaskScheduler.UnobservedTaskException += (_, e) => trace($"UnobservedTaskException: {e.Exception}");
+        UnhandledException += (_, e) => trace($"App.UnhandledException: {e.Exception}");
 
         Host = await builder.NavigateAsync<Shell>();
     }
@@ -94,7 +101,8 @@ public partial class App : Application
         views.Register(
             new ViewMap(ViewModel: typeof(ShellModel)),
             new ViewMap<MainPage, MainModel>(),
-            new DataViewMap<SecondPage, SecondModel, Entity>()
+            new ViewMap<SecondPage, SecondModel>(),
+            new ViewMap<GalleryPage, GalleryModel>()
         );
 
         routes.Register(
@@ -103,6 +111,7 @@ public partial class App : Application
                 [
                     new ("Main", View: views.FindByViewModel<MainModel>(), IsDefault:true),
                     new ("Second", View: views.FindByViewModel<SecondModel>()),
+                    new ("Gallery", View: views.FindByViewModel<GalleryModel>()),
                 ]
             )
         );

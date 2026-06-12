@@ -1,5 +1,5 @@
 namespace LiquidGlassLab.Presentation;
 
-public partial record SecondModel(Entity Entity)
+public partial record SecondModel
 {
 }

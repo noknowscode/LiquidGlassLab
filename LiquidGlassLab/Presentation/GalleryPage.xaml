@@ -1,0 +1,144 @@
+<Page x:Class="LiquidGlassLab.Presentation.GalleryPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:uen="using:Uno.Extensions.Navigation.UI"
+      xmlns:controls="using:LiquidGlassLab.Controls"
+      NavigationCacheMode="Required"
+      Background="#0E0F1E">
+
+  <Grid>
+
+    <!-- Animated background art so the glass has live content to refract -->
+    <Grid>
+      <Grid.Background>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+          <GradientStop Color="#10002B" Offset="0" />
+          <GradientStop Color="#3A0CA3" Offset="0.55" />
+          <GradientStop Color="#0E0F1E" Offset="1" />
+        </LinearGradientBrush>
+      </Grid.Background>
+
+      <Ellipse x:Name="Blob1" Width="460" Height="460"
+               HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-80,-120,0,0">
+        <Ellipse.RenderTransform>
+          <TranslateTransform x:Name="Blob1Transform" />
+        </Ellipse.RenderTransform>
+        <Ellipse.Fill>
+          <RadialGradientBrush>
+            <GradientStop Color="#FF6D00" Offset="0" />
+            <GradientStop Color="#00FF6D00" Offset="1" />
+          </RadialGradientBrush>
+        </Ellipse.Fill>
+      </Ellipse>
+
+      <Ellipse x:Name="Blob2" Width="520" Height="520"
+               HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-140,-180">
+        <Ellipse.RenderTransform>
+          <TranslateTransform x:Name="Blob2Transform" />
+        </Ellipse.RenderTransform>
+        <Ellipse.Fill>
+          <RadialGradientBrush>
+            <GradientStop Color="#00E5FF" Offset="0" />
+            <GradientStop Color="#0000E5FF" Offset="1" />
+          </RadialGradientBrush>
+        </Ellipse.Fill>
+      </Ellipse>
+
+      <TextBlock Text="LIQUID THEME"
+                 FontSize="92" FontWeight="Black" Foreground="#22FFFFFF"
+                 HorizontalAlignment="Center" VerticalAlignment="Center"
+                 RenderTransformOrigin="0.5,0.5">
+        <TextBlock.RenderTransform>
+          <RotateTransform Angle="-18" />
+        </TextBlock.RenderTransform>
+      </TextBlock>
+    </Grid>
+
+    <ScrollViewer>
+      <StackPanel Margin="32,104,32,40" Spacing="26" MaxWidth="680">
+
+        <TextBlock Text="Buttons" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource LiquidTextDimBrush}" />
+        <StackPanel Orientation="Horizontal" Spacing="14">
+          <Button Content="Glass button" Style="{StaticResource LiquidButtonStyle}" />
+          <Button Content="Disabled" Style="{StaticResource LiquidButtonStyle}" IsEnabled="False" />
+          <ToggleButton Content="Toggle me" Style="{StaticResource LiquidToggleButtonStyle}" />
+          <ToggleButton Content="Checked" Style="{StaticResource LiquidToggleButtonStyle}" IsChecked="True" />
+        </StackPanel>
+
+        <TextBlock Text="Input" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource LiquidTextDimBrush}" />
+        <TextBox x:Name="GlassInput"
+                 Style="{StaticResource LiquidTextBoxStyle}"
+                 PlaceholderText="Type something on glass…"
+                 MaxWidth="480"
+                 HorizontalAlignment="Left"
+                 Width="480" />
+
+        <TextBlock Text="Flyout" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource LiquidTextDimBrush}" />
+        <Button Content="Open glass flyout" Style="{StaticResource LiquidButtonStyle}" HorizontalAlignment="Left">
+          <Button.Flyout>
+            <Flyout FlyoutPresenterStyle="{StaticResource LiquidFlyoutPresenterStyle}" Placement="Bottom">
+              <controls:LiquidGlassPanel GlassCornerRadius="22"
+                                         RefractionStrength="22"
+                                         BezelWidth="16"
+                                         BlurRadius="12"
+                                         TintOpacity="0.14"
+                                         Padding="24,18"
+                                         Width="300">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="Glass popup" FontSize="17" FontWeight="SemiBold" Foreground="{StaticResource LiquidTextBrush}" />
+                  <TextBlock Text="Flyouts live in the popup layer — the backdrop still resolves against the page below."
+                             FontSize="13" TextWrapping="Wrap" Foreground="{StaticResource LiquidTextDimBrush}" />
+                </StackPanel>
+              </controls:LiquidGlassPanel>
+            </Flyout>
+          </Button.Flyout>
+        </Button>
+
+        <TextBlock Text="Glass card hosting standard controls" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource LiquidTextDimBrush}" />
+        <controls:LiquidGlassPanel GlassCornerRadius="26"
+                                   RefractionStrength="26"
+                                   BezelWidth="20"
+                                   BlurRadius="10"
+                                   TintOpacity="0.10"
+                                   Padding="26,22">
+          <StackPanel Spacing="14">
+            <Slider Minimum="0" Maximum="100" Value="62" Foreground="{StaticResource LiquidAccentBrush}" />
+            <ToggleSwitch Header="" OnContent="Refraction on" OffContent="Refraction off" IsOn="True" Foreground="{StaticResource LiquidTextBrush}" />
+            <CheckBox Content="Chromatic aberration" IsChecked="True" Foreground="{StaticResource LiquidTextBrush}" />
+          </StackPanel>
+        </controls:LiquidGlassPanel>
+
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- Pinned glass header -->
+    <controls:LiquidGlassPanel Height="72"
+                               Margin="16,12"
+                               VerticalAlignment="Top"
+                               GlassCornerRadius="24"
+                               RefractionStrength="26"
+                               BezelWidth="20"
+                               BlurRadius="10"
+                               TintOpacity="0.12"
+                               Padding="10,0">
+      <Grid ColumnSpacing="12">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition />
+        </Grid.ColumnDefinitions>
+        <Button Content="&#xE72B;"
+                FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                Background="Transparent"
+                BorderThickness="0"
+                Foreground="{StaticResource LiquidTextBrush}"
+                VerticalAlignment="Center"
+                uen:Navigation.Request="-" />
+        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+          <TextBlock Text="Liquid Theme Gallery" FontSize="19" FontWeight="SemiBold" Foreground="{StaticResource LiquidTextBrush}" />
+          <TextBlock Text="every control on real glass" FontSize="12" Foreground="{StaticResource LiquidTextDimBrush}" />
+        </StackPanel>
+      </Grid>
+    </controls:LiquidGlassPanel>
+
+  </Grid>
+</Page>

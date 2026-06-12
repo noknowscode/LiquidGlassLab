@@ -1,28 +1,108 @@
-﻿<Page x:Class="LiquidGlassLab.Presentation.SecondPage"
+<Page x:Class="LiquidGlassLab.Presentation.SecondPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-      xmlns:local="using:LiquidGlassLab.Presentation"
-      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:uen="using:Uno.Extensions.Navigation.UI"
       xmlns:utu="using:Uno.Toolkit.UI"
-      xmlns:um="using:Uno.Material"
-      Background="{ThemeResource BackgroundBrush}">
+      xmlns:controls="using:LiquidGlassLab.Controls"
+      xmlns:models="using:LiquidGlassLab.Models"
+      NavigationCacheMode="Required"
+      Background="#0E0F1E">
 
-  <Grid utu:SafeArea.Insets="VisibleBounds">
-    <Grid.RowDefinitions>
-      <RowDefinition Height="Auto" />
-      <RowDefinition />
-    </Grid.RowDefinitions>
-    <utu:NavigationBar Content="Second Page" />
-    <StackPanel Grid.Row="1"
-          HorizontalAlignment="Center"
-          VerticalAlignment="Center">
-      <TextBlock Text="{Binding Entity.Name}"
-        HorizontalAlignment="Center"
-        VerticalAlignment="Center"
-        Margin="8" />
-    </StackPanel>
+  <Grid>
+
+    <!-- Feed scrolling underneath the glass chrome (testbed art, literal colors) -->
+    <ScrollViewer x:Name="FeedScroll">
+      <ItemsRepeater ItemsSource="{x:Bind Items}" Margin="20,104,20,124">
+        <ItemsRepeater.Layout>
+          <StackLayout Orientation="Vertical" Spacing="14" />
+        </ItemsRepeater.Layout>
+        <ItemsRepeater.ItemTemplate>
+          <DataTemplate x:DataType="models:FeedItem">
+            <Border Height="132" CornerRadius="22" Background="{x:Bind Fill}" Padding="22,18">
+              <Grid ColumnSpacing="18">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{x:Bind Icon}" FontSize="44" VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+                  <TextBlock Text="{x:Bind Title}" FontSize="20" FontWeight="SemiBold" Foreground="#F0FFFFFF" />
+                  <TextBlock Text="{x:Bind Subtitle}" FontSize="14" Foreground="#A8FFFFFF" TextWrapping="Wrap" />
+                </StackPanel>
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ItemsRepeater.ItemTemplate>
+      </ItemsRepeater>
+    </ScrollViewer>
+
+    <!-- Pinned glass header -->
+    <controls:LiquidGlassPanel Height="72"
+                               Margin="16,12"
+                               VerticalAlignment="Top"
+                               GlassCornerRadius="24"
+                               RefractionStrength="26"
+                               BezelWidth="20"
+                               BlurRadius="10"
+                               TintOpacity="0.12"
+                               Padding="10,0">
+      <Grid ColumnSpacing="12">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <Button Content="&#xE72B;"
+                FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                Background="Transparent"
+                BorderThickness="0"
+                Foreground="#F0FFFFFF"
+                VerticalAlignment="Center"
+                uen:Navigation.Request="-" />
+        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+          <TextBlock Text="Glass Feed" FontSize="19" FontWeight="SemiBold" Foreground="#F5FFFFFF" />
+          <TextBlock Text="content scrolls under live glass" FontSize="12" Foreground="#90FFFFFF" />
+        </StackPanel>
+        <Ellipse Grid.Column="2" Width="38" Height="38" VerticalAlignment="Center">
+          <Ellipse.Fill>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+              <GradientStop Color="#F72585" Offset="0" />
+              <GradientStop Color="#FF6D00" Offset="1" />
+            </LinearGradientBrush>
+          </Ellipse.Fill>
+        </Ellipse>
+      </Grid>
+    </controls:LiquidGlassPanel>
+
+    <!-- Glass bottom tab bar -->
+    <controls:LiquidGlassPanel Height="84"
+                               Margin="24,0,24,18"
+                               VerticalAlignment="Bottom"
+                               GlassCornerRadius="30"
+                               RefractionStrength="30"
+                               BezelWidth="22"
+                               BlurRadius="12"
+                               TintOpacity="0.14">
+      <utu:TabBar Style="{StaticResource BottomTabBarStyle}"
+                  Background="Transparent"
+                  SelectedIndex="0">
+        <utu:TabBarItem Content="Feed" Foreground="#F0FFFFFF">
+          <utu:TabBarItem.Icon>
+            <SymbolIcon Symbol="Home" />
+          </utu:TabBarItem.Icon>
+        </utu:TabBarItem>
+        <utu:TabBarItem Content="Search" Foreground="#F0FFFFFF">
+          <utu:TabBarItem.Icon>
+            <SymbolIcon Symbol="Find" />
+          </utu:TabBarItem.Icon>
+        </utu:TabBarItem>
+        <utu:TabBarItem Content="Library" Foreground="#F0FFFFFF">
+          <utu:TabBarItem.Icon>
+            <SymbolIcon Symbol="Library" />
+          </utu:TabBarItem.Icon>
+        </utu:TabBarItem>
+      </utu:TabBar>
+    </controls:LiquidGlassPanel>
 
   </Grid>
 </Page>
