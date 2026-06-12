@@ -7,8 +7,13 @@ namespace LiquidGlassLab.Controls;
 /// <summary>
 /// Apple-style "Liquid Glass" surface for Uno Platform Skia targets.
 /// Samples the content already painted behind it via a backdrop SaveLayer,
-/// then refracts it (SkSL lens displacement map), blurs it, boosts saturation,
-/// and finishes with a tint wash and rim highlights.
+/// then refracts it (SkSL lens displacement map, with per-channel chromatic
+/// aberration), blurs it, boosts saturation, and finishes with a tint wash,
+/// rim highlights, and an inner bottom shade.
+///
+/// Threading model: dependency properties are snapshotted to plain fields on
+/// the UI thread; RenderOverride (render thread) reads only those fields and
+/// rebuilds its cached Skia objects when they drift from the built-with values.
 /// </summary>
 public partial class LiquidGlassView : SKCanvasElement
 {
@@ -18,6 +23,25 @@ public partial class LiquidGlassView : SKCanvasElement
     private readonly SKRuntimeEffect? _lensEffect;
     private readonly SKRuntimeShaderBuilder? _lensBuilder;
 
+    // UI-thread snapshots of the dependency properties.
+    private float _radius = 28f;
+    private float _strength = 40f;
+    private float _bezel = 24f;
+    private float _blur = 6f;
+    private float _aberration = 0.4f;
+    private float _saturation = 1.35f;
+    private SKColor _tint = new(255, 255, 255, 26);
+
+    // Render-thread caches and the values they were built with.
+    private SKImageFilter? _backdropFilter;
+    private float _builtW, _builtH, _builtRadius, _builtBezel, _builtBlur, _builtStrength, _builtAberration, _builtSaturation;
+    private SKPaint? _tintPaint;
+    private SKColor _builtTint;
+    private SKPaint? _rimPaint;
+    private SKPaint? _glowPaint;
+    private SKPaint? _shadePaint;
+    private float _chromeW, _chromeH;
+
     public LiquidGlassView()
     {
         _lensEffect = SKRuntimeEffect.CreateShader(LensSksl, out _);
@@ -25,6 +49,8 @@ public partial class LiquidGlassView : SKCanvasElement
         {
             _lensBuilder = new SKRuntimeShaderBuilder(_lensEffect);
         }
+
+        Unloaded += (_, _) => DisposeRenderCaches();
     }
 
     public static readonly DependencyProperty GlassCornerRadiusProperty = DependencyProperty.Register(
@@ -65,6 +91,16 @@ public partial class LiquidGlassView : SKCanvasElement
         set => SetValue(BlurRadiusProperty, value);
     }
 
+    /// <summary>0..1, splits the refraction per color channel at the rim.</summary>
+    public static readonly DependencyProperty ChromaticAberrationProperty = DependencyProperty.Register(
+        nameof(ChromaticAberration), typeof(double), typeof(LiquidGlassView), new PropertyMetadata(0.4, OnRenderPropertyChanged));
+
+    public double ChromaticAberration
+    {
+        get => (double)GetValue(ChromaticAberrationProperty);
+        set => SetValue(ChromaticAberrationProperty, value);
+    }
+
     public static readonly DependencyProperty TintColorProperty = DependencyProperty.Register(
         nameof(TintColor), typeof(Color), typeof(LiquidGlassView), new PropertyMetadata(Color.FromArgb(255, 255, 255, 255), OnRenderPropertyChanged));
 
@@ -93,7 +129,23 @@ public partial class LiquidGlassView : SKCanvasElement
     }
 
     private static void OnRenderPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        => ((LiquidGlassView)d).Invalidate();
+    {
+        var view = (LiquidGlassView)d;
+        view.SnapshotProperties();
+        view.Invalidate();
+    }
+
+    private void SnapshotProperties()
+    {
+        _radius = (float)GlassCornerRadius;
+        _strength = (float)RefractionStrength;
+        _bezel = (float)BezelWidth;
+        _blur = (float)BlurRadius;
+        _aberration = (float)Math.Clamp(ChromaticAberration, 0, 1);
+        _saturation = (float)SaturationBoost;
+        var tint = TintColor;
+        _tint = new SKColor(tint.R, tint.G, tint.B, (byte)Math.Clamp(TintOpacity * 255, 0, 255));
+    }
 
     protected override void RenderOverride(SKCanvas canvas, Windows.Foundation.Size area)
     {
@@ -104,40 +156,74 @@ public partial class LiquidGlassView : SKCanvasElement
             return;
         }
 
-        var radius = (float)Math.Min(GlassCornerRadius, Math.Min(w, h) / 2);
-        var bezel = (float)Math.Min(BezelWidth, Math.Min(w, h) / 2);
+        var radius = Math.Min(_radius, Math.Min(w, h) / 2);
+        var bezel = Math.Min(_bezel, Math.Min(w, h) / 2);
         var rect = new SKRect(0, 0, w, h);
         using var rrect = new SKRoundRect(rect, radius);
+
+        EnsureBackdropFilter(w, h, radius, bezel);
+        EnsureChrome(rect, radius);
 
         canvas.Save();
         canvas.ClipRoundRect(rrect, SKClipOperation.Intersect, antialias: true);
 
-        using var backdrop = BuildBackdropFilter(w, h, radius, bezel);
         var rec = new SKCanvasSaveLayerRec
         {
             Bounds = rect,
-            Backdrop = backdrop,
+            Backdrop = _backdropFilter,
         };
         canvas.SaveLayer(in rec);
         canvas.Restore();
 
-        DrawTint(canvas, rrect);
-        DrawRimHighlight(canvas, rect, radius);
+        if (_tintPaint is not null && _tint.Alpha > 0)
+        {
+            canvas.DrawRoundRect(rrect, _tintPaint);
+        }
+
+        if (_shadePaint is not null)
+        {
+            canvas.DrawRoundRect(rrect, _shadePaint);
+        }
+
+        var inset = rect;
+        inset.Inflate(-0.75f, -0.75f);
+        using var rim = new SKRoundRect(inset, Math.Max(radius - 0.75f, 0));
+        canvas.DrawRoundRect(rim, _rimPaint);
+
+        var glowRect = rect;
+        glowRect.Inflate(-2.5f, -2.5f);
+        using var glow = new SKRoundRect(glowRect, Math.Max(radius - 2.5f, 0));
+        canvas.DrawRoundRect(glow, _glowPaint);
 
         canvas.Restore();
+    }
+
+    private void EnsureBackdropFilter(float w, float h, float radius, float bezel)
+    {
+        if (_backdropFilter is not null
+            && _builtW == w && _builtH == h && _builtRadius == radius && _builtBezel == bezel
+            && _builtBlur == _blur && _builtStrength == _strength
+            && _builtAberration == _aberration && _builtSaturation == _saturation)
+        {
+            return;
+        }
+
+        _backdropFilter?.Dispose();
+        _backdropFilter = BuildBackdropFilter(w, h, radius, bezel);
+        (_builtW, _builtH, _builtRadius, _builtBezel) = (w, h, radius, bezel);
+        (_builtBlur, _builtStrength, _builtAberration, _builtSaturation) = (_blur, _strength, _aberration, _saturation);
     }
 
     private SKImageFilter? BuildBackdropFilter(float w, float h, float radius, float bezel)
     {
         SKImageFilter? chain = null;
 
-        var blurSigma = (float)BlurRadius;
-        if (blurSigma > 0.05f)
+        if (_blur > 0.05f)
         {
-            chain = SKImageFilter.CreateBlur(blurSigma, blurSigma, SKShaderTileMode.Clamp);
+            chain = SKImageFilter.CreateBlur(_blur, _blur, SKShaderTileMode.Clamp);
         }
 
-        if (_lensBuilder is not null && RefractionStrength > 0.5 && bezel > 0.5f)
+        if (_lensBuilder is not null && _strength > 0.5f && bezel > 0.5f)
         {
             _lensBuilder.Uniforms["uSize"] = new[] { w, h };
             _lensBuilder.Uniforms["uRadius"] = radius;
@@ -145,25 +231,19 @@ public partial class LiquidGlassView : SKCanvasElement
             using var lensShader = _lensBuilder.Build();
             if (lensShader is not null)
             {
-                var displacement = SKImageFilter.CreateShader(lensShader, dither: false);
-                // Offset = scale * (channel - 0.5); the shader encodes a [-1, 1] normal into [0, 1],
-                // so scale = 2 * desired max pixel offset.
-                var refracted = SKImageFilter.CreateDisplacementMapEffect(
-                    SKColorChannel.R,
-                    SKColorChannel.G,
-                    (float)RefractionStrength * 2f,
-                    displacement,
-                    chain);
+                using var displacement = SKImageFilter.CreateShader(lensShader, dither: false);
+                var refracted = _aberration > 0.01f
+                    ? BuildChromaticRefraction(displacement, chain)
+                    : SKImageFilter.CreateDisplacementMapEffect(
+                        SKColorChannel.R, SKColorChannel.G, _strength * 2f, displacement, chain);
                 chain?.Dispose();
-                displacement.Dispose();
                 chain = refracted;
             }
         }
 
-        var saturation = (float)SaturationBoost;
-        if (Math.Abs(saturation - 1f) > 0.01f)
+        if (Math.Abs(_saturation - 1f) > 0.01f)
         {
-            using var colorFilter = SKColorFilter.CreateColorMatrix(SaturationMatrix(saturation));
+            using var colorFilter = SKColorFilter.CreateColorMatrix(SaturationMatrix(_saturation));
             var saturated = SKImageFilter.CreateColorFilter(colorFilter, chain);
             chain?.Dispose();
             chain = saturated;
@@ -172,57 +252,80 @@ public partial class LiquidGlassView : SKCanvasElement
         return chain;
     }
 
-    private void DrawTint(SKCanvas canvas, SKRoundRect rrect)
+    /// <summary>
+    /// Splits the displacement per color channel — red bends more, blue less —
+    /// then recombines additively. Shared filter nodes (blur input, lens shader)
+    /// are evaluated once per frame by Skia's filter cache, so this costs three
+    /// displacement passes over the glass area, not three full chains.
+    /// </summary>
+    private SKImageFilter BuildChromaticRefraction(SKImageFilter displacement, SKImageFilter? input)
     {
-        var tint = TintColor;
-        var alpha = (byte)Math.Clamp(TintOpacity * 255, 0, 255);
-        if (alpha == 0)
+        var spread = 0.35f * _aberration;
+
+        SKImageFilter Channel(float scale, float[] matrix)
+        {
+            using var displaced = SKImageFilter.CreateDisplacementMapEffect(
+                SKColorChannel.R, SKColorChannel.G, _strength * 2f * scale, displacement, input);
+            using var isolate = SKColorFilter.CreateColorMatrix(matrix);
+            return SKImageFilter.CreateColorFilter(isolate, displaced);
+        }
+
+        using var r = Channel(1f + spread, ChannelMatrix(0));
+        using var g = Channel(1f, ChannelMatrix(1));
+        using var b = Channel(1f - spread, ChannelMatrix(2));
+
+        using var rg = SKImageFilter.CreateArithmetic(0, 1, 1, 0, enforcePMColor: true, background: r, foreground: g);
+        return SKImageFilter.CreateArithmetic(0, 1, 1, 0, enforcePMColor: true, background: rg, foreground: b);
+    }
+
+    private static float[] ChannelMatrix(int channel)
+    {
+        var m = new float[20];
+        m[channel * 5 + channel] = 1; // keep that channel
+        m[18] = 1;                    // keep alpha
+        return m;
+    }
+
+    private void EnsureChrome(SKRect rect, float radius)
+    {
+        if (_tintPaint is not null && _builtTint == _tint && _chromeW == rect.Width && _chromeH == rect.Height)
         {
             return;
         }
 
-        using var paint = new SKPaint
+        DisposeChrome();
+        _chromeW = rect.Width;
+        _chromeH = rect.Height;
+        _builtTint = _tint;
+
+        _tintPaint = new SKPaint
         {
             IsAntialias = true,
             Style = SKPaintStyle.Fill,
-            Color = new SKColor(tint.R, tint.G, tint.B, alpha),
+            Color = _tint,
         };
-        canvas.DrawRoundRect(rrect, paint);
-    }
 
-    private static void DrawRimHighlight(SKCanvas canvas, SKRect rect, float radius)
-    {
-        var inset = rect;
-        inset.Inflate(-0.75f, -0.75f);
-        using var rim = new SKRoundRect(inset, Math.Max(radius - 0.75f, 0));
-
-        // Bright rim catching light from the top-left.
-        using var topGradient = SKShader.CreateLinearGradient(
-            new SKPoint(rect.Left, rect.Top),
-            new SKPoint(rect.Left, rect.Bottom),
-            new[]
-            {
-                SKColors.White.WithAlpha(200),
-                SKColors.White.WithAlpha(30),
-                SKColors.White.WithAlpha(110),
-            },
-            new[] { 0f, 0.55f, 1f },
-            SKShaderTileMode.Clamp);
-
-        using var rimPaint = new SKPaint
+        // Bright rim catching light from the top, dimmer return along the bottom.
+        _rimPaint = new SKPaint
         {
             IsAntialias = true,
             Style = SKPaintStyle.Stroke,
             StrokeWidth = 1.5f,
-            Shader = topGradient,
+            Shader = SKShader.CreateLinearGradient(
+                new SKPoint(rect.Left, rect.Top),
+                new SKPoint(rect.Left, rect.Bottom),
+                new[]
+                {
+                    SKColors.White.WithAlpha(200),
+                    SKColors.White.WithAlpha(30),
+                    SKColors.White.WithAlpha(110),
+                },
+                new[] { 0f, 0.55f, 1f },
+                SKShaderTileMode.Clamp),
         };
-        canvas.DrawRoundRect(rim, rimPaint);
 
-        // Soft inner glow just inside the rim.
-        var glowRect = rect;
-        glowRect.Inflate(-2.5f, -2.5f);
-        using var glow = new SKRoundRect(glowRect, Math.Max(radius - 2.5f, 0));
-        using var glowPaint = new SKPaint
+        // Soft glow just inside the rim.
+        _glowPaint = new SKPaint
         {
             IsAntialias = true,
             Style = SKPaintStyle.Stroke,
@@ -230,7 +333,37 @@ public partial class LiquidGlassView : SKCanvasElement
             Color = SKColors.White.WithAlpha(28),
             MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 2.5f),
         };
-        canvas.DrawRoundRect(glow, glowPaint);
+
+        // Faint shade pooling at the bottom of the slab for depth.
+        _shadePaint = new SKPaint
+        {
+            IsAntialias = true,
+            Style = SKPaintStyle.Fill,
+            Shader = SKShader.CreateLinearGradient(
+                new SKPoint(rect.Left, rect.Top + rect.Height * 0.6f),
+                new SKPoint(rect.Left, rect.Bottom),
+                new[] { SKColors.Black.WithAlpha(0), SKColors.Black.WithAlpha(26) },
+                null,
+                SKShaderTileMode.Clamp),
+        };
+    }
+
+    private void DisposeChrome()
+    {
+        _tintPaint?.Dispose();
+        _rimPaint?.Dispose();
+        _glowPaint?.Dispose();
+        _shadePaint?.Dispose();
+        _tintPaint = _rimPaint = _glowPaint = _shadePaint = null;
+    }
+
+    private void DisposeRenderCaches()
+    {
+        _backdropFilter?.Dispose();
+        _backdropFilter = null;
+        _builtW = 0;
+        DisposeChrome();
+        _chromeW = 0;
     }
 
     private static float[] SaturationMatrix(float s)

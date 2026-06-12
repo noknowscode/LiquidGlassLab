@@ -17,6 +17,15 @@ Apple-style **Liquid Glass** for Uno Platform, rendered live on the Skia rendere
 
 SkiaSharp 3.119 has no binding for `SkImageFilters::RuntimeShader`, so the SkSL shader can't process the backdrop directly — routing it through the displacement-map filter as the *displacement input* is the workaround, and it's also cheaper (the shader is evaluated once per pixel as a plain shader).
 
+## Performance model
+
+`RenderOverride` runs on the render thread, potentially every frame while dragging, so the control never builds Skia objects per frame:
+
+- The whole backdrop filter DAG, tint/rim/shade paints, and gradient shaders are **cached** and rebuilt only when a parameter or the element size changes.
+- Dependency properties are **snapshotted to plain fields on the UI thread**; the render thread reads fields only and compares them to the built-with values — no cross-thread DP access.
+- **Chromatic aberration** splits the displacement per channel (R bends more, B less) and recombines with arithmetic compose filters. The shared blur and lens-shader nodes are evaluated once by Skia's filter cache, so it costs three displacement passes over the glass area, not three full chains.
+- Caches are dropped on `Unloaded` and rebuilt lazily.
+
 ## Gotcha worth remembering
 
 `SKRuntimeShaderBuilder` must be **created once and cached**. Disposing it (e.g. `using var builder = ...` per frame) tears down native state shared with its `SKRuntimeEffect`; the next render then hits a native use-after-free (`0xC0000005` in `sk_runtimeeffect_get_uniform_byte_size`). Symptom: first frame fine, crash on the next invalidation (e.g. when dragging).
@@ -29,6 +38,7 @@ SkiaSharp 3.119 has no binding for `SkImageFilters::RuntimeShader`, so the SkSL 
 | `RefractionStrength` | 40 | Max sample offset at the rim, px |
 | `BezelWidth` | 24 | Width of the refracting edge band, px |
 | `BlurRadius` | 6 | Backdrop blur sigma |
+| `ChromaticAberration` | 0.4 | 0..1, per-channel refraction split at the rim |
 | `TintColor` / `TintOpacity` | white / 0.10 | Glass tint wash |
 | `SaturationBoost` | 1.35 | Backdrop vibrancy |
 
