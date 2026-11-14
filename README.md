@@ -1,3 +1,5 @@
+> **Moved to uno-lab.** This project now lives in the `LiquidGlassLab/` folder of [noknowscode/uno-lab](https://github.com/noknowscode/uno-lab/tree/main/LiquidGlassLab) (private). This repository is archived and kept for its history.
+
 # LiquidGlassLab
 
 Apple-style **Liquid Glass** for Uno Platform, rendered live on the Skia renderer. Glass surfaces refract, blur, and saturate whatever the app has painted behind them — live content, no static snapshots, no platform-specific effect APIs. One C# control, one XAML theme, works on every Skia-rendered target.
